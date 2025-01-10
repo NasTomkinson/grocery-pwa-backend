@@ -1,34 +1,24 @@
-import Connection from './connection.ts'
-import { Application, Router } from 'https://deno.land/x/oak/mod.ts';
-import { oakCors } from "https://deno.land/x/cors/mod.ts";
+import Connection from "./connection.ts";
+import { startServer } from "./graphql/init.ts";
 
-const app = new Application();
-const router = new Router();
-const __CONN = new Connection("db-grocery")
 
-app.use(oakCors())
-app.use(router.routes())
-app.use(router.allowedMethods())
+const _CONN = new Connection("db-grocery");
 
-router.post('/account/create', async (ctx) => { 
-  if (ctx.request.hasBody) { 
-    const body = await ctx.request.body.json() 
+Deno.serve({port: 3000}, async (_req) => {
+  const _URL = new URL(_req.url);
 
-    __CONN.insertInto("users", [{
-      "username": body?.username || "",
-      "firstName": body?.firstName || "",
-      "lastName": body?.lastName || "",
-      "email": body?.email || "",
-      "password": body?.password || "",
-    }])
+  return handleResponse({"PageURL": _URL.pathname})
+})
 
-    ctx.response.status = 200;
-    ctx.response.body = { "message": "Added user successfully" }
+function handleResponse (response: any): object {
+  return new Response(JSON.stringify({
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: response
+  }))
+}
 
-  } else { 
-    ctx.response.status = 400; 
-    ctx.response.body = { "error": "Issue adding user" }
-  }
-  });
+startServer(_CONN)
 
-await app.listen({ port: 8000 })
+// await app.listen({ port: 8000 });
